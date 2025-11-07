@@ -48,13 +48,12 @@ RETRY_HTTP_CODES = [403, 429, 500, 502, 503, 504, 522, 524, 408]
 
 # Configure item pipelines
 ITEM_PIPELINES = {
-    "scraper.pipelines.PairingPipeline": 300,
+    "scraper.pipelines.StoragePipeline": 300,
 }
 
-# Output settings for pairing pipeline
+# Output settings for pipeline
 OUTPUT_DIR = "output"
-PAIRED_OUTPUT_FILE = "paired_chapters.json"
-PAIR_BY = "order"  # or "chapter_number"
+OUTPUT_NAME = "chapters"
 
 # Enable and configure the AutoThrottle extension
 AUTOTHROTTLE_ENABLED = True

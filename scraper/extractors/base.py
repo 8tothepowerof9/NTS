@@ -10,7 +10,7 @@ class BaseExtractor(ABC):
         pass
 
     @abstractmethod
-    def extract_chapter_number(self, response) -> float:
+    def extract_chapter_number(self, response) -> str:
         """Extract chapter number"""
         pass
 

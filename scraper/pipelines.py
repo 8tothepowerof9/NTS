@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Literal, Optional
+from typing import List, Optional
 
 import scrapy
 
@@ -10,54 +10,48 @@ from .items import NovelChapterItem
 logger = logging.getLogger(__name__)
 
 
-class PairingPipeline:
+class StoragePipeline:
     """
-    Pipeline to pair Korean source chapters with English translations.
+    Pipeline to store Korean and English chapters separately.
 
-    Stores chapters in memory and pairs them by chapter number or by the order they were scraped.
-
-    Outputs paired chapters to a JSON file under the specified directory.
+    Saves Korean chapters to one JSON file and English chapters to another.
+    No pairing logic - just simple storage.
     """
 
     # Class-level shared storage (shared across all spider instances)
     _shared_korean_chapters: List[NovelChapterItem] = []
     _shared_english_chapters: List[NovelChapterItem] = []
-    _shared_output_file: Optional[str] = None
     _shared_output_dir: Optional[Path] = None
-    _shared_pair_by: Optional[str] = None
+    _shared_output_name: Optional[str] = None
     _spider_count: int = 0
     _completed_spiders: int = 0
 
     def __init__(
         self,
-        output_file: str,
         output_dir: str = "output",
-        pair_by: Literal["chapter_number", "order"] = "order",
+        output_name: str = "chapters",
     ):
         """
-        Initialize the PairingPipeline.
+        Initialize the StoragePipeline.
 
         Args:
-            output_file (str): Output filename for paired chapters.
-            output_dir (str, optional): Json output directory. Defaults to "output".
-            pair_by (Literal["chapter_number", "order"], optional): Determine how to pair the chapters. Defaults to "order".
+            output_dir (str, optional): Output directory. Defaults to "output".
+            output_name (str, optional): Base name for output files. Defaults to "chapters".
         """
-        self.output_file = output_file
         self.output_dir = Path(output_dir)
-        self.pair_by = pair_by
+        self.output_name = output_name
 
         # Initialize shared class variables on first instance
-        if PairingPipeline._shared_output_file is None:
-            PairingPipeline._shared_output_file = output_file
-            PairingPipeline._shared_output_dir = self.output_dir
-            PairingPipeline._shared_pair_by = pair_by
-            PairingPipeline._shared_korean_chapters = []
-            PairingPipeline._shared_english_chapters = []
-            PairingPipeline._spider_count = 0
-            PairingPipeline._completed_spiders = 0
+        if StoragePipeline._shared_output_dir is None:
+            StoragePipeline._shared_output_dir = self.output_dir
+            StoragePipeline._shared_output_name = output_name
+            StoragePipeline._shared_korean_chapters = []
+            StoragePipeline._shared_english_chapters = []
+            StoragePipeline._spider_count = 0
+            StoragePipeline._completed_spiders = 0
 
         logger.info(
-            f"PairingPipeline output directory set to: {self.output_dir.resolve()}"
+            f"StoragePipeline output directory set to: {self.output_dir.resolve()}"
         )
 
     @classmethod
@@ -69,16 +63,14 @@ class PairingPipeline:
             crawler: Scrapy crawler instance
 
         Returns:
-            PairingPipeline: Configured pipeline instance
+            StoragePipeline: Configured pipeline instance
         """
-        output_file = crawler.settings.get("PAIRED_OUTPUT_FILE", "paired_chapters.json")
         output_dir = crawler.settings.get("OUTPUT_DIR", "output")
-        pair_by = crawler.settings.get("PAIR_BY", "order")
+        output_name = crawler.settings.get("OUTPUT_NAME", "chapters")
 
         return cls(
-            output_file=output_file,
             output_dir=output_dir,
-            pair_by=pair_by,
+            output_name=output_name,
         )
 
     def open_spider(self, spider: scrapy.Spider):
@@ -88,128 +80,67 @@ class PairingPipeline:
         Args:
             spider (scrapy.Spider): The spider instance.
         """
-        PairingPipeline._spider_count += 1
-        logger.info(
-            f"PairingPipeline started with pair_by='{self.pair_by}' (Spider {PairingPipeline._spider_count})"
-        )
+        StoragePipeline._spider_count += 1
+        logger.info(f"StoragePipeline started (Spider {StoragePipeline._spider_count})")
 
         # Create output directory if it doesn't exist
         self.output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(
-            f"PairingPipeline output directory set to: {self.output_dir.absolute()}"
+            f"StoragePipeline output directory set to: {self.output_dir.absolute()}"
         )
 
     def process_item(self, item: NovelChapterItem, spider: scrapy.Spider):
-        """Process each scraped item and store it for pairing."""
+        """Process each scraped item and store it."""
         if item["language"] == "korean":
-            PairingPipeline._shared_korean_chapters.append(item)
+            StoragePipeline._shared_korean_chapters.append(item)
             logger.debug(f"Stored Korean chapter {item.get('chapter_number')}")
         elif item["language"] == "english":
-            PairingPipeline._shared_english_chapters.append(item)
+            StoragePipeline._shared_english_chapters.append(item)
             logger.debug(f"Stored English chapter {item.get('chapter_number')}")
 
         return item
 
     def close_spider(self, spider: scrapy.Spider):
-        """Called when a spider is closed. Pair and save only after all spiders finish."""
-        PairingPipeline._completed_spiders += 1
+        """Called when a spider is closed. Save only after all spiders finish."""
+        StoragePipeline._completed_spiders += 1
         logger.info(
-            f"Spider closed ({PairingPipeline._completed_spiders}/{PairingPipeline._spider_count} completed)"
+            f"Spider closed ({StoragePipeline._completed_spiders}/{StoragePipeline._spider_count} completed)"
         )
 
-        # Only pair and save when ALL spiders have finished
-        if PairingPipeline._completed_spiders == PairingPipeline._spider_count:
-            logger.info("All spiders completed. Starting pairing process...")
-            self._pair_and_save()
+        # Only save when ALL spiders have finished
+        if StoragePipeline._completed_spiders == StoragePipeline._spider_count:
+            logger.info("All spiders completed. Saving chapters...")
+            self._save_chapters()
 
             # Reset for next run
-            PairingPipeline._shared_korean_chapters = []
-            PairingPipeline._shared_english_chapters = []
-            PairingPipeline._spider_count = 0
-            PairingPipeline._completed_spiders = 0
+            StoragePipeline._shared_korean_chapters = []
+            StoragePipeline._shared_english_chapters = []
+            StoragePipeline._spider_count = 0
+            StoragePipeline._completed_spiders = 0
 
-    def _pair_and_save(self):
-        """Pair Korean and English chapters and save to file."""
-        paired_chapters = []
+    def _save_chapters(self):
+        """Save Korean and English chapters to separate files."""
+        output_dir = StoragePipeline._shared_output_dir or Path(".")
+        output_name = StoragePipeline._shared_output_name or "chapters"
 
-        if PairingPipeline._shared_pair_by == "chapter_number":
-            paired_chapters = self._pair_by_chapter_number()
-        else:  # pair_by == "order"
-            paired_chapters = self._pair_by_order()
+        # Save Korean chapters
+        if StoragePipeline._shared_korean_chapters:
+            korean_path = output_dir / f"{output_name}_korean.json"
+            korean_data = [dict(ch) for ch in StoragePipeline._shared_korean_chapters]
 
-        # Save to JSON
-        output_dir = PairingPipeline._shared_output_dir or Path(".")
-        output_file = PairingPipeline._shared_output_file or "paired_chapters.json"
-        output_path = output_dir / output_file
+            with open(korean_path, "w", encoding="utf-8") as f:
+                json.dump(korean_data, f, ensure_ascii=False, indent=2)
 
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(paired_chapters, f, ensure_ascii=False, indent=2)
+            logger.info(f"Saved {len(korean_data)} Korean chapters to {korean_path}")
 
-        logger.info(f"Saved {len(paired_chapters)} paired chapters to {output_path}")
+        # Save English chapters
+        if StoragePipeline._shared_english_chapters:
+            english_path = output_dir / f"{output_name}_english.json"
+            english_data = [dict(ch) for ch in StoragePipeline._shared_english_chapters]
 
-        # Log unpaired chapters
-        korean_chapters_used = {p["korean"]["chapter_number"] for p in paired_chapters}
-        english_chapters_used = {
-            p["english"]["chapter_number"] for p in paired_chapters
-        }
+            with open(english_path, "w", encoding="utf-8") as f:
+                json.dump(english_data, f, ensure_ascii=False, indent=2)
 
-        unpaired_korean = [
-            ch["chapter_number"]
-            for ch in PairingPipeline._shared_korean_chapters
-            if ch["chapter_number"] not in korean_chapters_used
-        ]
-        unpaired_english = [
-            ch["chapter_number"]
-            for ch in PairingPipeline._shared_english_chapters
-            if ch["chapter_number"] not in english_chapters_used
-        ]
+            logger.info(f"Saved {len(english_data)} English chapters to {english_path}")
 
-        if unpaired_korean:
-            logger.warning(
-                f"Unpaired Korean chapters ({len(unpaired_korean)}): {unpaired_korean}"
-            )
-        if unpaired_english:
-            logger.warning(
-                f"Unpaired English chapters ({len(unpaired_english)}): {unpaired_english}"
-            )
-
-        logger.info("PairingPipeline finished.")
-
-    def _pair_by_chapter_number(self) -> List[Dict]:
-        """Pair chapters by matching chapter numbers."""
-        korean_dict = {
-            ch["chapter_number"]: ch for ch in PairingPipeline._shared_korean_chapters
-        }
-        english_dict = {
-            ch["chapter_number"]: ch for ch in PairingPipeline._shared_english_chapters
-        }
-
-        paired = []
-        for chapter_num in sorted(set(korean_dict.keys()) & set(english_dict.keys())):
-            paired.append(
-                {
-                    "korean": dict(korean_dict[chapter_num]),
-                    "english": dict(english_dict[chapter_num]),
-                }
-            )
-
-        return paired
-
-    def _pair_by_order(self) -> List[Dict]:
-        """Pair chapters by the order they were scraped."""
-        min_length = min(
-            len(PairingPipeline._shared_korean_chapters),
-            len(PairingPipeline._shared_english_chapters),
-        )
-
-        paired = []
-        for i in range(min_length):
-            paired.append(
-                {
-                    "korean": dict(PairingPipeline._shared_korean_chapters[i]),
-                    "english": dict(PairingPipeline._shared_english_chapters[i]),
-                }
-            )
-
-        return paired
+        logger.info("StoragePipeline finished.")
