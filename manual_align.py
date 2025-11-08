@@ -12,6 +12,79 @@ def load_chapters(file_path: Path) -> List[Dict]:
         return json.load(f)
 
 
+def parse_english_chapter(chapter_title: str) -> Tuple[int, int]:
+    """
+    Parse English chapter format like 'Chapter 1.1' or 'Chapter 1'
+    Returns (chapter_number, sub_chapter) where sub_chapter is 0 if not present
+    """
+    match = re.search(r"Chapter\s+(\d+)(?:\.(\d+))?", chapter_title, re.IGNORECASE)
+    if match:
+        chapter = int(match.group(1))
+        sub_chapter = int(match.group(2)) if match.group(2) else 0
+        return (chapter, sub_chapter)
+    return (0, 0)
+
+
+def parse_korean_chapter(chapter_title: str) -> int:
+    """
+    Parse Korean chapter format like '(1/294)'
+    Returns the chapter number
+    """
+    match = re.search(r"\((\d+)/\d+\)", chapter_title)
+    if match:
+        return int(match.group(1))
+    return 0
+
+
+def auto_align_chapters(
+    english_chapters: List[Dict], korean_chapters: List[Dict]
+) -> List[Dict]:
+    """
+    Automatically align English and Korean chapters based on chapter numbers.
+    English sub-chapters (1.1, 1.2, 1.3) are grouped with Korean chapter (1/294)
+    """
+    # Group English chapters by main chapter number
+    english_grouped = {}
+    for i, chapter in enumerate(english_chapters):
+        if "content" not in chapter:
+            continue
+
+        chapter_title = chapter.get("chapter_number", "")
+        chapter_num, sub_chapter = parse_english_chapter(chapter_title)
+
+        if chapter_num == 0:
+            continue
+
+        if chapter_num not in english_grouped:
+            english_grouped[chapter_num] = []
+
+        english_grouped[chapter_num].append(i)
+
+    # Sort sub-chapters within each group
+    for chapter_num in english_grouped:
+        english_grouped[chapter_num].sort(
+            key=lambda idx: parse_english_chapter(
+                english_chapters[idx].get("chapter_number", "")
+            )[1]
+        )
+
+    # Match with Korean chapters
+    alignments = []
+    for i, korean_chapter in enumerate(korean_chapters):
+        if "content" not in korean_chapter:
+            continue
+
+        korean_title = korean_chapter.get("chapter_number", "")
+        korean_chapter_num = parse_korean_chapter(korean_title)
+
+        if korean_chapter_num in english_grouped:
+            alignments.append(
+                {"english": english_grouped[korean_chapter_num], "korean": [i]}
+            )
+
+    return alignments
+
+
 def merge_chapters(chapters: List[Dict]) -> Dict:
     """Merge multiple chapters into one by concatenating content."""
     if not chapters:
@@ -84,15 +157,15 @@ def main():
         # File paths
         english_file = st.text_input(
             "English Chapters File",
-            value="output/Stop, Friendly Fire!/chapters_english.json",
+            value="output/Got Dropped Into a Ghost Story/chapters_english.json",
         )
         korean_file = st.text_input(
             "Korean Chapters File",
-            value="output/Stop, Friendly Fire!/chapters_korean.json",
+            value="output/Got Dropped Into a Ghost Story/chapters_korean.json",
         )
         output_file = st.text_input(
             "Output Alignments File",
-            value="output/Stop, Friendly Fire!/aligned.json",
+            value="output/Got Dropped Into a Ghost Story/aligned.json",
         )
 
         # Load existing alignments if available
@@ -117,6 +190,22 @@ def main():
                 st.session_state.current_alignment = {"english": [], "korean": []}
             except Exception as e:
                 st.error(f"Error loading files: {e}")
+
+        # Auto-align button
+        st.divider()
+        if st.button("🤖 Auto-Align All Chapters", type="primary"):
+            if st.session_state.get("english_chapters") and st.session_state.get(
+                "korean_chapters"
+            ):
+                auto_alignments = auto_align_chapters(
+                    st.session_state.english_chapters,
+                    st.session_state.korean_chapters,
+                )
+                st.session_state.alignments = auto_alignments
+                st.success(f"Auto-aligned {len(auto_alignments)} chapter pairs!")
+                st.rerun()
+            else:
+                st.error("Please load chapters first!")
 
     # Initialize session state
     if "english_chapters" not in st.session_state:
@@ -241,6 +330,7 @@ def main():
                 st.session_state.korean_chapters,
                 Path(output_file),
             )
+            st.success(f"Saved {len(st.session_state.alignments)} alignments!")
 
     with col3:
         if st.button("🗑️ Clear Selection"):
