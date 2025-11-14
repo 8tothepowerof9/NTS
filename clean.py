@@ -19,6 +19,20 @@ def clean_text(text: str) -> str:
     # Replace ” with " and ‘ ’ with '
     text = text.replace("”", '"').replace("“", '"').replace("‘", "'").replace("’", "'")
 
+    # Replace alternatives with [ and ]
+    text = (
+        text.replace("『", "[").replace("』", "]").replace("「", "[").replace("」", "]")
+    )
+    text = text.replace("【", "[").replace("】", "]")
+    text = text.replace("⦗", "[").replace("⦘", "]")
+    text = text.replace("〖", "[").replace("〗", "]")
+    text = text.replace("⟦", "[").replace("⟧", "]")
+    text = text.replace("⟨", "[").replace("⟩", "]")
+    text = text.replace("《", "[").replace("》", "]")
+
+    # Add \n between consecutive ] and [
+    text = re.sub(r"\]\s*\[", "]\n[", text)
+
     return text.strip()
 
 
