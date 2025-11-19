@@ -11,6 +11,8 @@ dependencies = [
     "pandas>=2.3.3",
     "playwright-stealth>=2.0.0",
     "scrapy>=2.13.3",
+    "scrapy-fake-useragent>=1.4.4",
     "scrapy-playwright>=0.0.44",
     "streamlit>=1.51.0",
+    "zstandard>=0.25.0",
 ]

@@ -46,6 +46,19 @@ def save_json_file(file_path, data):
         return False
 
 
+def create_empty_chapter(language):
+    """Create an empty chapter template"""
+    return {
+        "url": "",
+        "source_site": "",
+        "language": language,
+        "timestamp": datetime.now().isoformat(),
+        "novel_title": "",
+        "chapter_number": "",
+        "content": "",
+    }
+
+
 def main():
     st.title("✏️ Chapter Editor")
     st.markdown("Edit aligned Korean and English chapters side by side")
@@ -54,8 +67,10 @@ def main():
     with st.sidebar:
         st.header("📂 File Selection")
 
-        # Find aligned JSON files
+        # Find all JSON files in output directory
         json_files = list(Path("output").rglob("*.json"))
+
+        # Categorize files
         aligned_files = [
             f
             for f in json_files
@@ -63,28 +78,99 @@ def main():
             and "english" not in f.name
             and "indices" not in f.name
         ]
+        korean_files = [f for f in json_files if "korean" in f.name.lower()]
+        english_files = [f for f in json_files if "english" in f.name.lower()]
 
-        if not aligned_files:
-            st.warning("No aligned JSON files found in 'output' directory")
-            return
+        # File mode selection
+        mode = st.radio("Mode:", ["Load Aligned File", "Manual Pairing"])
 
-        selected_file = st.selectbox(
-            "Select aligned file:",
-            aligned_files,
-            format_func=lambda x: f"{x.parent.name}/{x.name}",
-        )
+        if mode == "Load Aligned File":
+            if not aligned_files:
+                st.warning("No aligned JSON files found in 'output' directory")
+                return
 
-        if st.button("🔄 Load File", type="primary"):
-            data = load_json_file(selected_file)
-            if data:
-                st.session_state.aligned_data = data
-                st.session_state.current_file = str(selected_file)
-                st.session_state.edited_data = [item.copy() for item in data]
-                st.success(f"Loaded {len(data)} aligned chapters")
+            selected_file = st.selectbox(
+                "Select aligned file:",
+                aligned_files,
+                format_func=lambda x: f"{x.parent.name}/{x.name}",
+            )
+
+            if st.button("🔄 Load File", type="primary"):
+                data = load_json_file(selected_file)
+                if data:
+                    st.session_state.aligned_data = data
+                    st.session_state.current_file = str(selected_file)
+                    st.session_state.edited_data = [item.copy() for item in data]
+                    st.session_state.mode = "aligned"
+                    st.success(f"Loaded {len(data)} aligned chapters")
+
+        else:  # Manual Pairing mode
+            st.markdown("### Select Files")
+
+            korean_file = None
+            english_file = None
+
+            if korean_files:
+                korean_file = st.selectbox(
+                    "Korean file:",
+                    [None] + korean_files,
+                    format_func=lambda x: (
+                        "Select..." if x is None else f"{x.parent.name}/{x.name}"
+                    ),
+                )
+
+            if english_files:
+                english_file = st.selectbox(
+                    "English file:",
+                    [None] + english_files,
+                    format_func=lambda x: (
+                        "Select..." if x is None else f"{x.parent.name}/{x.name}"
+                    ),
+                )
+
+            if st.button("🔄 Load for Pairing", type="primary"):
+                if not korean_file and not english_file:
+                    st.error("Please select at least one file")
+                else:
+                    korean_data = load_json_file(korean_file) if korean_file else []
+                    english_data = load_json_file(english_file) if english_file else []
+
+                    # Create aligned structure
+                    max_len = max(len(korean_data), len(english_data))
+                    aligned_data = []
+
+                    for i in range(max_len):
+                        korean_ch = (
+                            korean_data[i]
+                            if i < len(korean_data)
+                            else create_empty_chapter("korean")
+                        )
+                        english_ch = (
+                            english_data[i]
+                            if i < len(english_data)
+                            else create_empty_chapter("english")
+                        )
+
+                        aligned_data.append(
+                            {"korean": korean_ch, "english": english_ch}
+                        )
+
+                    st.session_state.aligned_data = aligned_data
+                    st.session_state.edited_data = [
+                        item.copy() for item in aligned_data
+                    ]
+                    st.session_state.mode = "manual"
+                    st.session_state.korean_file = (
+                        str(korean_file) if korean_file else None
+                    )
+                    st.session_state.english_file = (
+                        str(english_file) if english_file else None
+                    )
+                    st.success(f"Loaded {max_len} chapter pairs for manual editing")
 
     # Initialize session state
     if "aligned_data" not in st.session_state:
-        st.info("👈 Please load an aligned file from the sidebar")
+        st.info("👈 Please load files from the sidebar")
         return
 
     # Chapter navigation
@@ -209,34 +295,79 @@ def main():
 
     # Save buttons
     st.markdown("---")
-    col1, col2, col3 = st.columns([2, 2, 2])
+    col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
 
     with col1:
         if st.button("💾 Save Changes", type="primary", use_container_width=True):
-            if save_json_file(
-                st.session_state.current_file, st.session_state.edited_data
+            if (
+                st.session_state.get("mode") == "aligned"
+                and "current_file" in st.session_state
             ):
-                st.success("✅ Changes saved successfully!")
-                st.balloons()
+                if save_json_file(
+                    st.session_state.current_file, st.session_state.edited_data
+                ):
+                    st.success("✅ Changes saved successfully!")
+                    st.balloons()
+            elif st.session_state.get("mode") == "manual":
+                # Save as aligned file
+                novel_name = st.session_state.edited_data[0]["english"].get(
+                    "novel_title", "Unknown"
+                )
+                output_dir = Path("output") / novel_name
+                output_dir.mkdir(parents=True, exist_ok=True)
+                aligned_file = output_dir / "aligned.json"
+
+                if save_json_file(aligned_file, st.session_state.edited_data):
+                    st.session_state.current_file = str(aligned_file)
+                    st.session_state.mode = "aligned"
+                    st.success(f"✅ Saved as aligned file: {aligned_file.name}")
+                    st.balloons()
 
     with col2:
         if st.button("📥 Export as New File", use_container_width=True):
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            original_path = Path(st.session_state.current_file)
-            new_file = (
-                original_path.parent / f"{original_path.stem}_edited_{timestamp}.json"
-            )
+
+            if "current_file" in st.session_state:
+                original_path = Path(st.session_state.current_file)
+                new_file = (
+                    original_path.parent
+                    / f"{original_path.stem}_edited_{timestamp}.json"
+                )
+            else:
+                novel_name = st.session_state.edited_data[0]["english"].get(
+                    "novel_title", "Unknown"
+                )
+                output_dir = Path("output") / novel_name
+                output_dir.mkdir(parents=True, exist_ok=True)
+                new_file = output_dir / f"aligned_edited_{timestamp}.json"
 
             if save_json_file(new_file, st.session_state.edited_data):
                 st.success(f"✅ Exported to: {new_file.name}")
 
     with col3:
         if st.button("🔄 Reload Original", use_container_width=True):
-            data = load_json_file(st.session_state.current_file)
-            if data:
-                st.session_state.edited_data = [item.copy() for item in data]
-                st.success("✅ Reloaded original data")
-                st.rerun()
+            if (
+                st.session_state.get("mode") == "aligned"
+                and "current_file" in st.session_state
+            ):
+                data = load_json_file(st.session_state.current_file)
+                if data:
+                    st.session_state.edited_data = [item.copy() for item in data]
+                    st.success("✅ Reloaded original data")
+                    st.rerun()
+            else:
+                st.warning("Cannot reload in manual pairing mode")
+
+    with col4:
+        if st.button("➕ Add Chapter Pair", use_container_width=True):
+            new_pair = {
+                "korean": create_empty_chapter("korean"),
+                "english": create_empty_chapter("english"),
+            }
+            st.session_state.edited_data.append(new_pair)
+            st.session_state.current_chapter_idx = len(st.session_state.edited_data) - 1
+            st.success("✅ Added new chapter pair")
+            st.rerun()
 
     # Statistics
     with st.sidebar:
