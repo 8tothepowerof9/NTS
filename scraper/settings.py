@@ -1,16 +1,15 @@
 # Scrapy settings for novel scraper project
 
-BOT_NAME = "novel_scraper"
+BOT_NAME = "DUC"
 
 SPIDER_MODULES = ["scraper.spiders"]
 NEWSPIDER_MODULE = "scraper.spiders"
 
 # User agent (will be overridden by random UA in spider)
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
-
 
 # Configure a delay for requests for the same website (default: 0)
 DOWNLOAD_DELAY = 5
@@ -24,11 +23,19 @@ CONCURRENT_REQUESTS_PER_IP = 4
 # Enable cookies (important for session tracking)
 COOKIES_ENABLED = True
 
-# Default request headers (make them look like a real browser)
+# Rotating User Agents - Edge versions on Windows
+USER_AGENT_LIST = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
+]
+
+# Enhanced request headers - Match Edge browser exactly
 DEFAULT_REQUEST_HEADERS = {
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9,ko;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Accept-Language": "en-US,en;q=0.9,vi;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br, zstd",
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1",
     "Sec-Fetch-Dest": "document",
@@ -36,14 +43,19 @@ DEFAULT_REQUEST_HEADERS = {
     "Sec-Fetch-Site": "none",
     "Sec-Fetch-User": "?1",
     "Cache-Control": "max-age=0",
-    "Referer": "https://google.com/",
-    "sec-ch-ua": '"Google Chrome";v="119", "Chromium";v="119", "Not?A_Brand";v="24"',
+    "DNT": "1",
+    "sec-ch-ua": '"Chromium";v="131", "Microsoft Edge";v="131", "Not_A Brand";v="99"',
     "sec-ch-ua-mobile": "?0",
     "sec-ch-ua-platform": '"Windows"',
+    "sec-ch-ua-arch": '"x86"',
+    "sec-ch-ua-bitness": '"64"',
+    "sec-ch-ua-full-version": '"131.0.2903.112"',
+    "sec-ch-ua-platform-version": '"15.0.0"',
+    "sec-ch-ua-model": '""',
 }
 
 # Retry on common anti-bot codes
-RETRY_TIMES = 5
+RETRY_TIMES = 2
 RETRY_HTTP_CODES = [403, 429, 500, 502, 503, 504, 522, 524, 408]
 
 # Configure item pipelines
@@ -76,17 +88,26 @@ DOWNLOAD_HANDLERS = {
     "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
 }
 
+DOWNLOADER_MIDDLEWARES = {
+    # "scraper.middlewares.HeaderLoggingMiddleware": 544,
+}
+
 # Playwright settings - Use Edge
 PLAYWRIGHT_BROWSER_TYPE = "chromium"
 PLAYWRIGHT_LAUNCH_OPTIONS = {
-    "headless": True,
-    "channel": "msedge",  # use edge browser
+    "headless": False,
+    "channel": "msedge",
     "args": [
         "--disable-blink-features=AutomationControlled",
         "--disable-dev-shm-usage",
         "--no-sandbox",
         "--disable-features=IsolateOrigins,site-per-process",
         "--disable-web-security",
+        "--disable-infobars",
+        "--disable-extensions",
+        "--disable-gpu",
+        "--window-size=1920,1080",
+        "--start-maximized",
     ],
 }
 
@@ -100,9 +121,22 @@ PLAYWRIGHT_CONTEXTS = {
         "has_touch": False,
         "java_script_enabled": True,
         "locale": "en-US",
-        "timezone_id": "America/New_York",
-        "geolocation": {"longitude": -74.0060, "latitude": 40.7128},
         "permissions": ["geolocation"],
         "color_scheme": "light",
+        "bypass_csp": True,
+        "ignore_https_errors": True,
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+        "extra_http_headers": {
+            "DNT": "1",
+            "sec-ch-ua": '"Chromium";v="131", "Microsoft Edge";v="131", "Not_A Brand";v="99"',
+            "sec-ch-ua-arch": '"x86"',
+            "sec-ch-ua-bitness": '"64"',
+            "sec-ch-ua-full-version": '"131.0.2903.112"',
+            "sec-ch-ua-full-version-list": '"Chromium";v="131.0.6778.205", "Microsoft Edge";v="131.0.2903.112", "Not_A Brand";v="99.0.0.0"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-model": '""',
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-ch-ua-platform-version": '"15.0.0"',
+        },
     }
 }

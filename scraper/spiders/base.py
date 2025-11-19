@@ -19,12 +19,12 @@ class BaseNovelSpider(scrapy.Spider):
     source_site = None
     language = None
     auto_crawl = False
+    use_playwright = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ua = UserAgent()
         self.visited_urls = set()  # To track visited URLs
-        self.use_playwright = False
 
         self.max_chapters = int(kwargs.get("max_chapters", 0))  # 0 means unlimited
         self.chapters_scraped = 0
@@ -41,6 +41,7 @@ class BaseNovelSpider(scrapy.Spider):
     async def start(self):
         """Start requests with Playwright integration and human-like behavior."""
         for url in self.start_urls:
+
             yield scrapy.Request(
                 url,
                 callback=self.parse_chapter,
@@ -56,6 +57,8 @@ class BaseNovelSpider(scrapy.Spider):
                         PageMethod(
                             "evaluate",
                             """
+                            page => require('playwright-stealth').stealth(page)
+                            
                             () => {
                                 window.scrollTo(0, Math.random() * 300);
                                 const event = new MouseEvent('mousemove', {
@@ -125,6 +128,7 @@ class BaseNovelSpider(scrapy.Spider):
                     next_url,
                     callback=self.parse_chapter,
                     headers={"User-Agent": self.ua.random},
+                    dont_filter=True,
                     meta={
                         "playwright": self.use_playwright,
                         "playwright_include_page": True,
