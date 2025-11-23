@@ -1,0 +1,116 @@
+{
+  "max_tokens": 10240,
+  "total_novels": 6,
+  "total_chapters_converted": 1417,
+  "total_chapters_skipped": 12,
+  "novels": {
+    "Got Dropped Into a Ghost Story": {
+      "file": "output\\Got Dropped Into a Ghost Story\\aligned.json",
+      "total_skipped": 5,
+      "skipped_chapters": [
+        {
+          "index": 0,
+          "reason": "too_long",
+          "estimated_tokens": 10651,
+          "korean_length": 9936,
+          "english_length": 21867
+        },
+        {
+          "index": 1,
+          "reason": "too_long",
+          "estimated_tokens": 11204,
+          "korean_length": 10649,
+          "english_length": 22816
+        },
+        {
+          "index": 160,
+          "reason": "too_long",
+          "estimated_tokens": 10997,
+          "korean_length": 10105,
+          "english_length": 22737
+        },
+        {
+          "index": 183,
+          "reason": "too_long",
+          "estimated_tokens": 10652,
+          "korean_length": 10308,
+          "english_length": 21498
+        },
+        {
+          "index": 234,
+          "reason": "too_long",
+          "estimated_tokens": 10455,
+          "korean_length": 9926,
+          "english_length": 21292
+        }
+      ]
+    },
+    "So, Did Someone Force You to Become the Heavenly Demon": {
+      "file": "output\\So, Did Someone Force You to Become the Heavenly Demon\\aligned.json",
+      "total_skipped": 1,
+      "skipped_chapters": [
+        {
+          "index": 104,
+          "reason": "too_long",
+          "estimated_tokens": 11221,
+          "korean_length": 6396,
+          "english_length": 27117
+        }
+      ]
+    },
+    "SSS-Class Revival Hunter": {
+      "file": "output\\SSS-Class Revival Hunter\\aligned.json",
+      "total_skipped": 5,
+      "skipped_chapters": [
+        {
+          "index": 0,
+          "reason": "too_long",
+          "estimated_tokens": 10948,
+          "korean_length": 9962,
+          "english_length": 22735
+        },
+        {
+          "index": 51,
+          "reason": "too_long",
+          "estimated_tokens": 11695,
+          "korean_length": 11535,
+          "english_length": 23400
+        },
+        {
+          "index": 227,
+          "reason": "too_long",
+          "estimated_tokens": 10248,
+          "korean_length": 10840,
+          "english_length": 19756
+        },
+        {
+          "index": 282,
+          "reason": "too_long",
+          "estimated_tokens": 14028,
+          "korean_length": 8975,
+          "english_length": 32961
+        },
+        {
+          "index": 283,
+          "reason": "too_long",
+          "estimated_tokens": 13170,
+          "korean_length": 7497,
+          "english_length": 31863
+        }
+      ]
+    },
+    "Stop, Friendly Fire!": {
+      "file": "output\\Stop, Friendly Fire!\\aligned.json",
+      "total_skipped": 1,
+      "skipped_chapters": [
+        {
+          "index": 300,
+          "reason": "too_long",
+          "estimated_tokens": 13557,
+          "korean_length": 13723,
+          "english_length": 26800
+        }
+      ]
+    }
+  }
+}

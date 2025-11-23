@@ -1,5 +1,37 @@
 import json
+import re
 from pathlib import Path
+
+
+def clean_text(text: str) -> str:
+    """Clean up text by removing excessive whitespace and newlines."""
+    # Clean up multiple spaces
+    text = re.sub(r" +", " ", text)
+
+    # Clean up spaces around newlines
+    text = re.sub(r" *\n *", "\n", text)
+
+    # Clean up multiple consecutive newlines (keep max 2 newlines = 1 blank line)
+    text = re.sub(r"\n{2,}", "\n", text)
+
+    # Replace " with " and ' ' with '
+    text = text.replace("”", '"').replace("“", '"').replace("‘", "'").replace("’", "'")
+
+    # Replace alternatives with [ and ]
+    text = (
+        text.replace("『", "[").replace("』", "]").replace("「", "[").replace("」", "]")
+    )
+    text = text.replace("【", "[").replace("】", "]")
+    text = text.replace("⦗", "[").replace("⦘", "]")
+    text = text.replace("〖", "[").replace("〗", "]")
+    text = text.replace("⟦", "[").replace("⟧", "]")
+    text = text.replace("⟨", "[").replace("⟩", "]")
+    text = text.replace("《", "[").replace("》", "]")
+
+    # Add \n between consecutive ] and [
+    text = re.sub(r"\]\s*\[", "]\n[", text)
+
+    return text.strip()
 
 
 def estimate_tokens(text):
@@ -12,19 +44,61 @@ def estimate_tokens(text):
     return len(text) // 3
 
 
-def convert_to_sharegpt_format(input_file, output_file, max_tokens=3072):
-    """
-    Convert your chapter format to ShareGPT format for Axolotl
-    """
-    with open(input_file, "r", encoding="utf-8") as f:
+def clean_chapter(chapter):
+    """Clean a single aligned chapter."""
+    cleaned_chapter = {}
+
+    # Clean English content
+    if "english" in chapter and "content" in chapter["english"]:
+        cleaned_chapter["english"] = chapter["english"].copy()
+        cleaned_chapter["english"]["content"] = clean_text(
+            chapter["english"]["content"]
+        )
+    else:
+        cleaned_chapter["english"] = chapter.get("english", {})
+
+    # Clean Korean content
+    if "korean" in chapter and "content" in chapter["korean"]:
+        cleaned_chapter["korean"] = chapter["korean"].copy()
+        cleaned_chapter["korean"]["content"] = clean_text(chapter["korean"]["content"])
+    else:
+        cleaned_chapter["korean"] = chapter.get("korean", {})
+
+    return cleaned_chapter
+
+
+def process_aligned_file(aligned_file_path, max_tokens=10240):
+    """Process a single aligned.json file: clean and convert to ShareGPT format."""
+    print(f"\nProcessing: {aligned_file_path}")
+
+    # Load aligned data
+    with open(aligned_file_path, "r", encoding="utf-8") as f:
         chapters = json.load(f)
 
+    print(f"   Found {len(chapters)} chapters")
+
+    # Clean and convert chapters
     converted_data = []
     skipped_chapters = []
 
     for idx, chapter in enumerate(chapters):
-        korean_content = chapter["korean"]["content"]
-        english_content = chapter["english"]["content"]
+        # Clean the chapter first
+        cleaned_chapter = clean_chapter(chapter)
+
+        korean_content = cleaned_chapter["korean"].get("content", "")
+        english_content = cleaned_chapter["english"].get("content", "")
+
+        # Skip if either content is empty
+        if not korean_content or not english_content:
+            skipped_chapters.append(
+                {
+                    "index": idx,
+                    "reason": "empty_content",
+                    "korean_length": len(korean_content),
+                    "english_length": len(english_content),
+                }
+            )
+            continue
 
         # Estimate total tokens (including instruction overhead)
         kr_tokens = estimate_tokens(korean_content)
@@ -37,6 +111,7 @@ def convert_to_sharegpt_format(input_file, output_file, max_tokens=3072):
             skipped_chapters.append(
                 {
                     "index": idx,
+                    "reason": "too_long",
                     "estimated_tokens": total_tokens,
                     "korean_length": len(korean_content),
                     "english_length": len(english_content),
@@ -49,7 +124,7 @@ def convert_to_sharegpt_format(input_file, output_file, max_tokens=3072):
             "messages": [
                 {
                     "from": "user",
-                    "value": f"Translate the following Korean webnovel chapter to English. Maintain the narrative style, character consistency, and natural flow.\n\n{korean_content}",
+                    "value": f"Translate the following Korean webnovel chapter to English. \n\n{korean_content}",
                 },
                 {"from": "assistant", "value": english_content},
             ]
@@ -57,43 +132,95 @@ def convert_to_sharegpt_format(input_file, output_file, max_tokens=3072):
 
         converted_data.append(conversation)
 
-    # Save converted data
+    print(f"    Converted: {len(converted_data)} chapters")
+    if skipped_chapters:
+        print(f"     Skipped: {len(skipped_chapters)} chapters")
+
+    return converted_data, skipped_chapters
+
+
+def main():
+    """Main function to process all aligned.json files in output folder."""
+    output_dir = Path("output")
+
+    if not output_dir.exists():
+        print(f"Error: '{output_dir}' directory not found")
+        return
+
+    # Find all aligned.json files
+    aligned_files = list(output_dir.rglob("aligned.json"))
+
+    if not aligned_files:
+        print(f"No aligned.json files found in '{output_dir}'")
+        return
+
+    print(f"🔍 Found {len(aligned_files)} aligned.json files")
+
+    # Process all files
+    all_converted_data = []
+    all_skipped_reports = {}
+    max_tokens = 10240  # 10k tokens
+
+    for aligned_file in aligned_files:
+        novel_name = aligned_file.parent.name
+        converted_data, skipped_chapters = process_aligned_file(
+            aligned_file, max_tokens=max_tokens
+        )
+
+        all_converted_data.extend(converted_data)
+
+        if skipped_chapters:
+            all_skipped_reports[novel_name] = {
+                "file": str(aligned_file),
+                "total_skipped": len(skipped_chapters),
+                "skipped_chapters": skipped_chapters,
+            }
+
+    # Save combined training data
+    output_file = output_dir / "training_data.jsonl"
+    print(f"\nSaving combined training data...")
+
     with open(output_file, "w", encoding="utf-8") as f:
-        for item in converted_data:
+        for item in all_converted_data:
             f.write(json.dumps(item, ensure_ascii=False) + "\n")
 
-    # Save report on skipped chapters
-    if skipped_chapters:
-        report_file = output_file.replace(".jsonl", "_skipped_report.json")
+    print(f"   Saved to: {output_file}")
+
+    # Save skipped chapters report
+    if all_skipped_reports:
+        report_file = output_dir / "training_data_skipped_report.json"
+        total_skipped = sum(
+            report["total_skipped"] for report in all_skipped_reports.values()
+        )
+
         with open(report_file, "w", encoding="utf-8") as f:
             json.dump(
                 {
-                    "total_skipped": len(skipped_chapters),
-                    "skipped_chapters": skipped_chapters,
-                    "summary": f"Skipped {len(skipped_chapters)} out of {len(chapters)} chapters",
+                    "max_tokens": max_tokens,
+                    "total_novels": len(aligned_files),
+                    "total_chapters_converted": len(all_converted_data),
+                    "total_chapters_skipped": total_skipped,
+                    "novels": all_skipped_reports,
                 },
                 f,
                 indent=2,
                 ensure_ascii=False,
             )
-        print(
-            f"⚠️  Skipped {len(skipped_chapters)} chapters (too long for {max_tokens} tokens)"
-        )
+
+        print(f"\nSkipped Report:")
+        print(f"   Total skipped: {total_skipped} chapters")
         print(f"   Report saved to: {report_file}")
 
-    print(f"✅ Converted {len(converted_data)} chapters")
-    print(f"   Output saved to: {output_file}")
+    # Print summary
+    print(f"\n" + "=" * 60)
+    print(f"TRAINING DATA PREPARATION COMPLETE")
+    print(f"=" * 60)
+    print(f"Novels processed: {len(aligned_files)}")
+    print(f"Total chapters converted: {len(all_converted_data)}")
+    print(f"Max tokens limit: {max_tokens}")
+    print(f"Output file: {output_file}")
+    print(f"=" * 60)
 
-    return converted_data, skipped_chapters
 
-
-# Usage
 if __name__ == "__main__":
-    input_file = "output/test.json"  # Your original data
-    output_file = "training_data.jsonl"  # Axolotl format
-
-    convert_to_sharegpt_format(
-        input_file=input_file,
-        output_file=output_file,
-        max_tokens=8192,  # Adjust based on your RTX 5080 capacity
-    )
+    main()

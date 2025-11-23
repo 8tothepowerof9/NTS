@@ -74,13 +74,13 @@ def run_paired_scraping(
 
     print(f"✓ Detected Korean spider: {korean_name}")
 
-    process.crawl(
-        korean_spider,
-        start_urls=korean_urls,
-        auto_crawl=auto_crawl,
-        max_chapters=kor_max_chapters,
-        use_playwright=use_playwright,
-    )
+    # process.crawl(
+    #     korean_spider,
+    #     start_urls=korean_urls,
+    #     auto_crawl=auto_crawl,
+    #     max_chapters=kor_max_chapters,
+    #     use_playwright=use_playwright,
+    # )
 
     # Detect and schedule English spider
     english_url = english_urls[0]
@@ -94,13 +94,13 @@ def run_paired_scraping(
 
     print(f"✓ Detected English spider: {english_name}")
 
-    # process.crawl(
-    #     english_spider,
-    #     start_urls=english_urls,
-    #     auto_crawl=auto_crawl,
-    #     max_chapters=eng_max_chapters,
-    #     use_playwright=use_playwright,
-    # )
+    process.crawl(
+        english_spider,
+        start_urls=english_urls,
+        auto_crawl=auto_crawl,
+        max_chapters=eng_max_chapters,
+        use_playwright=use_playwright,
+    )
 
     process.start()
     print("\n✅ Scraping completed! Check the output directory for results.")
