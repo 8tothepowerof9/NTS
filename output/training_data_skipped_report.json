@@ -1,7 +1,7 @@
 {
   "max_tokens": 10240,
   "total_novels": 6,
-  "total_chapters_converted": 1417,
+  "total_chapters_converted": 1416,
   "total_chapters_skipped": 12,
   "novels": {
     "Got Dropped Into a Ghost Story": {
@@ -104,7 +104,7 @@
       "total_skipped": 1,
       "skipped_chapters": [
         {
-          "index": 300,
+          "index": 299,
           "reason": "too_long",
           "estimated_tokens": 13557,
           "korean_length": 13723,
