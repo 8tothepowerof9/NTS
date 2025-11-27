@@ -1,4 +1,5 @@
 import json
+import random
 import re
 from pathlib import Path
 
@@ -16,17 +17,26 @@ def clean_text(text: str) -> str:
 
     # Replace " with " and ' ' with '
     text = text.replace("”", '"').replace("“", '"').replace("‘", "'").replace("’", "'")
+    text = text.replace("❝", '"').replace("❞", '"')
+    text = text.replace("❛", "'").replace("❜", "'")
 
     # Replace alternatives with [ and ]
     text = (
         text.replace("『", "[").replace("』", "]").replace("「", "[").replace("」", "]")
     )
+    text = text.replace("｢", "[").replace("｣", "]")
     text = text.replace("【", "[").replace("】", "]")
     text = text.replace("⦗", "[").replace("⦘", "]")
     text = text.replace("〖", "[").replace("〗", "]")
     text = text.replace("⟦", "[").replace("⟧", "]")
     text = text.replace("⟨", "[").replace("⟩", "]")
     text = text.replace("《", "[").replace("》", "]")
+    # Replace more alternatives
+    text = text.replace("﹁", "[").replace("﹂", "]")
+    text = text.replace("﹃", "[").replace("﹄", "]")
+    text = text.replace("❬", "[").replace("❭", "]")
+    text = text.replace("❮", "[").replace("❯", "]")
+    text = text.replace("❰", "[").replace("❱", "]")
 
     # Add \n between consecutive ] and [
     text = re.sub(r"\]\s*\[", "]\n[", text)
@@ -176,9 +186,13 @@ def main():
                 "skipped_chapters": skipped_chapters,
             }
 
+    # Shuffle the training data
+    print(f"\nShuffling training data...")
+    random.shuffle(all_converted_data)
+
     # Save combined training data
     output_file = output_dir / "training_data.jsonl"
-    print(f"\nSaving combined training data...")
+    print(f"Saving combined training data...")
 
     with open(output_file, "w", encoding="utf-8") as f:
         for item in all_converted_data:
