@@ -86,16 +86,16 @@
         {
           "index": 282,
           "reason": "too_long",
-          "estimated_tokens": 14028,
-          "korean_length": 8975,
-          "english_length": 32961
+          "estimated_tokens": 14010,
+          "korean_length": 8953,
+          "english_length": 32930
         },
         {
           "index": 283,
           "reason": "too_long",
-          "estimated_tokens": 13170,
-          "korean_length": 7497,
-          "english_length": 31863
+          "estimated_tokens": 13151,
+          "korean_length": 7475,
+          "english_length": 31832
         }
       ]
     },
