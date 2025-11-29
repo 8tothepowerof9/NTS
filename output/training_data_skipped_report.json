@@ -2,6 +2,8 @@
   "max_tokens": 10240,
   "total_novels": 6,
   "total_chapters_converted": 1416,
+  "train_chapters": 1274,
+  "test_chapters": 142,
   "total_chapters_skipped": 12,
   "novels": {
     "Got Dropped Into a Ghost Story": {

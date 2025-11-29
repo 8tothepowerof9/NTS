@@ -133,6 +133,10 @@ def process_aligned_file(aligned_file_path, max_tokens=10240):
         conversation = {
             "messages": [
                 {
+                    "from": "system",
+                    "value": "You are a professional webnovel translator. Translate the following Korean text into flowing, immersive English. Use terminology appropriate for the setting.",
+                },
+                {
                     "from": "user",
                     "value": f"Translate the following Korean webnovel chapter to English. \n\n{korean_content}",
                 },
@@ -187,18 +191,35 @@ def main():
             }
 
     # Shuffle the training data
-    print(f"\nShuffling training data...")
+    print(f"\nShuffling data...")
     random.shuffle(all_converted_data)
 
-    # Save combined training data
-    output_file = output_dir / "training_data.jsonl"
-    print(f"Saving combined training data...")
+    # Split into train and test (90% / 10%)
+    split_idx = int(len(all_converted_data) * 0.9)
+    train_data = all_converted_data[:split_idx]
+    test_data = all_converted_data[split_idx:]
 
-    with open(output_file, "w", encoding="utf-8") as f:
-        for item in all_converted_data:
+    print(f"Split: {len(train_data)} train, {len(test_data)} test")
+
+    # Save training data
+    train_file = output_dir / "training_data.jsonl"
+    print(f"\nSaving training data...")
+
+    with open(train_file, "w", encoding="utf-8") as f:
+        for item in train_data:
             f.write(json.dumps(item, ensure_ascii=False) + "\n")
 
-    print(f"   Saved to: {output_file}")
+    print(f"   Saved to: {train_file}")
+
+    # Save test data
+    test_file = output_dir / "test_data.jsonl"
+    print(f"Saving test data...")
+
+    with open(test_file, "w", encoding="utf-8") as f:
+        for item in test_data:
+            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+    print(f"   Saved to: {test_file}")
 
     # Save skipped chapters report
     if all_skipped_reports:
@@ -213,6 +234,8 @@ def main():
                     "max_tokens": max_tokens,
                     "total_novels": len(aligned_files),
                     "total_chapters_converted": len(all_converted_data),
+                    "train_chapters": len(train_data),
+                    "test_chapters": len(test_data),
                     "total_chapters_skipped": total_skipped,
                     "novels": all_skipped_reports,
                 },
@@ -231,8 +254,11 @@ def main():
     print(f"=" * 60)
     print(f"Novels processed: {len(aligned_files)}")
     print(f"Total chapters converted: {len(all_converted_data)}")
+    print(f"Train chapters: {len(train_data)} (90%)")
+    print(f"Test chapters: {len(test_data)} (10%)")
     print(f"Max tokens limit: {max_tokens}")
-    print(f"Output file: {output_file}")
+    print(f"Training file: {train_file}")
+    print(f"Test file: {test_file}")
     print(f"=" * 60)
 
 
