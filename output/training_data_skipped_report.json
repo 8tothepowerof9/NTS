@@ -1,10 +1,10 @@
 {
   "max_tokens": 10240,
   "total_novels": 6,
-  "total_chapters_converted": 1416,
-  "train_chapters": 1274,
+  "total_chapters_converted": 1417,
+  "train_chapters": 1275,
   "test_chapters": 142,
-  "total_chapters_skipped": 12,
+  "total_chapters_skipped": 11,
   "novels": {
     "Got Dropped Into a Ghost Story": {
       "file": "output\\Got Dropped Into a Ghost Story\\aligned.json",
@@ -62,15 +62,8 @@
     },
     "SSS-Class Revival Hunter": {
       "file": "output\\SSS-Class Revival Hunter\\aligned.json",
-      "total_skipped": 5,
+      "total_skipped": 4,
       "skipped_chapters": [
-        {
-          "index": 0,
-          "reason": "too_long",
-          "estimated_tokens": 10948,
-          "korean_length": 9962,
-          "english_length": 22735
-        },
         {
           "index": 51,
           "reason": "too_long",
