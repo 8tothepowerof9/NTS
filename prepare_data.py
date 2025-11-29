@@ -136,10 +136,7 @@ def process_aligned_file(aligned_file_path, max_tokens=10240):
                     "from": "system",
                     "value": "You are a professional webnovel translator. Translate the following Korean text into flowing, immersive English. Use terminology appropriate for the setting.",
                 },
-                {
-                    "from": "user",
-                    "value": f"Translate the following Korean webnovel chapter to English. \n\n{korean_content}",
-                },
+                {"from": "user", "value": korean_content},
                 {"from": "assistant", "value": english_content},
             ]
         }
