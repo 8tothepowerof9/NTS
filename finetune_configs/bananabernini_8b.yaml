@@ -26,7 +26,7 @@ lora_target_modules:
 
 # Hardware & Speed
 
-flash_attention: true
+flash_attention: false
 xformers_attention: false
 bf16: true
 fp16: false
@@ -98,3 +98,6 @@ deepspeed: deepspeed_configs/zero2.json
 trust_remote_code: true
 
 strict: false
+
+model_config:
+  attn_implementation: "sdpa"
