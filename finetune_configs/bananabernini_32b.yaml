@@ -52,11 +52,11 @@ early_stopping_patience: 4
 output_dir: ./outputs/bananabernini_32b
 
 # Dataset Configuration
-chat_template: cohere
 shuffle_merged_datasets: true
 datasets:
   - path: training_data.jsonl
     type: chat_template
+    chat_template: tokenizer_default
     field_messages: messages
     message_property_mappings:
       role: from
@@ -65,6 +65,7 @@ datasets:
 test_datasets:
   - path: test_data.jsonl
     type: chat_template
+    chat_template: tokenizer_default
     field_messages: messages
     message_property_mappings:
       role: from
