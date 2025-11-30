@@ -23,12 +23,12 @@ lora_target_modules:
 
 # Hardware & Speed
 
-flash_attention: false # Gemma-3n does not support flash attention
+flash_attention: true
 xformers_attention: false
 bf16: true
 fp16: false
 # plugins:
-#   - axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin
+#   - axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin # Temporarily disable to inspect error when using with dora and rslora
 
 # Context & Batching
 
