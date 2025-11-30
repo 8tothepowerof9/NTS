@@ -87,7 +87,7 @@ dataloader_pin_memory: true
 
 # Multi-GPU settings
 
-deepspeed: deepspeed_configs/zero2.json
+# deepspeed: deepspeed_configs/zero2.json
 
 # Regularization
 # neftune_noise_alpha: 5
