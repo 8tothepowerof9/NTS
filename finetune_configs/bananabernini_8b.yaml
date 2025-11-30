@@ -11,7 +11,15 @@ peft_use_rslora: true
 lora_r: 32
 lora_alpha: 32 # Consider using 16 to prevent overwriting pre-trained weights
 lora_dropout: 0.05
-lora_target_linear: true
+# lora_target_linear: true # Multi-modal models require specifying target modules
+lora_target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
 
 # Hardware & Speed
 
