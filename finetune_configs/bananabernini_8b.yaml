@@ -1,3 +1,6 @@
+# Problems: flash_attention causes issues with timm which is required by the model
+# dora and rslora together cause issues with cut cross entropy plugin
+
 base_model: google/gemma-3n-E4B-it
 model_type: AutoModelForCausalLM
 tokenizer_type: AutoTokenizer
@@ -87,7 +90,7 @@ dataloader_pin_memory: true
 
 # Multi-GPU settings
 
-# deepspeed: deepspeed_configs/zero2.json
+deepspeed: deepspeed_configs/zero2.json
 
 # Regularization
 # neftune_noise_alpha: 5
