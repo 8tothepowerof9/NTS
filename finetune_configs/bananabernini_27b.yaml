@@ -72,8 +72,8 @@ test_datasets:
 
 # Data Loading
 
-dataloader_prefetch_factor: 8
-dataloader_num_workers: 8
+dataloader_prefetch_factor: 4
+dataloader_num_workers: 4
 dataloader_pin_memory: true
 
 # Multi-GPU settings

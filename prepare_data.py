@@ -77,7 +77,7 @@ def clean_chapter(chapter):
     return cleaned_chapter
 
 
-def process_aligned_file(aligned_file_path, max_tokens=10240):
+def process_aligned_file(aligned_file_path, max_tokens=10240, model_type="cohere"):
     """Process a single aligned.json file: clean and convert to ShareGPT format."""
     print(f"\nProcessing: {aligned_file_path}")
 
@@ -131,12 +131,16 @@ def process_aligned_file(aligned_file_path, max_tokens=10240):
 
         # Create ShareGPT format
         conversation = {
+            # Have system if using cohere model, if gemma skip system message
             "messages": [
+                # {
+                #     "from": "system",
+                #     "value": "You are a professional webnovel translator. Translate the following Korean text into flowing, immersive English. Use terminology appropriate for the setting.",
+                # },
                 {
-                    "from": "system",
-                    "value": "You are a professional webnovel translator. Translate the following Korean text into flowing, immersive English. Use terminology appropriate for the setting.",
+                    "from": "user",
+                    "value": f"You are a professional webnovel translator. Translate the following Korean text into flowing, immersive English. Use terminology appropriate for the setting.\n\n{korean_content}",
                 },
-                {"from": "user", "value": korean_content},
                 {"from": "assistant", "value": english_content},
             ]
         }
