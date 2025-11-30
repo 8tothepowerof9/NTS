@@ -1,5 +1,6 @@
 # Problems: flash_attention causes issues with timm which is required by the model
 # dora and rslora together cause issues with cut cross entropy plugin
+# Most important part: tune lora_r, lora_alpha, learning rate, and num_epochs
 
 base_model: mistralai/Mistral-Nemo-Instruct-2407
 model_type: AutoModelForCausalLM
@@ -9,10 +10,11 @@ tokenizer_type: AutoTokenizer
 
 load_in_4bit: true
 adapter: qlora
-peft_use_dora: true
+# Experiemnt with rslora first
+peft_use_dora: false
 peft_use_rslora: true
 lora_r: 32
-lora_alpha: 32 # Consider using 16 to prevent overwriting pre-trained weights
+lora_alpha: 64 # Consider using 16 to prevent overwriting pre-trained weights
 lora_dropout: 0.05
 lora_target_linear: true
 
@@ -22,8 +24,8 @@ flash_attention: true
 xformers_attention: false
 bf16: true
 fp16: false
-# plugins:
-#   - axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin # Temporarily disable to inspect error when using with dora and rslora
+plugins:
+  - axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin
 
 # Context & Batching
 
@@ -33,16 +35,17 @@ pad_to_sequence_len: true
 sequence_len: 12000
 
 # Gradient accumulation = 16 * 1 micro_batch * 3 GPUs = Global Batch 48
+# Or 8 * 2 micro_batch * 3 GPUs = Global Batch 48
 
-micro_batch_size: 1
-gradient_accumulation_steps: 16
+micro_batch_size: 2
+gradient_accumulation_steps: 8
 gradient_checkpointing: true
 gradient_checkpointing_kwargs:
   use_reentrant: false
 
 # Optimizer & Training
 
-learning_rate: 0.00003
+learning_rate: 0.0001
 optimizer: paged_adamw_8bit
 lr_scheduler: cosine
 warmup_ratio: 0.1
@@ -55,6 +58,7 @@ early_stopping_patience: 4
 output_dir: ./outputs/bananabernini_12b
 
 # Dataset Configuration
+chat_template: tokenizer_default
 shuffle_merged_datasets: true
 datasets:
   - path: training_data.jsonl

@@ -6,10 +6,10 @@ tokenizer_type: AutoTokenizer
 
 load_in_4bit: true
 adapter: qlora
-peft_use_dora: true
+peft_use_dora: false
 peft_use_rslora: true
 lora_r: 32
-lora_alpha: 32 # Consider using 16 to prevent overwriting pre-trained weights
+lora_alpha: 64 # Consider using 16 to prevent overwriting pre-trained weights
 lora_dropout: 0.05
 lora_target_linear: true
 
@@ -53,6 +53,7 @@ output_dir: ./outputs/bananabernini_32b
 
 # Dataset Configuration
 shuffle_merged_datasets: true
+chat_template: tokenizer_default
 datasets:
   - path: training_data.jsonl
     type: chat_template
