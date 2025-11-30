@@ -19,8 +19,8 @@ flash_attention: true
 xformers_attention: false
 bf16: true
 fp16: false
-plugins:
-  - axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin
+# plugins:
+#   - axolotl.integrations.cut_cross_entropy.CutCrossEntropyPlugin
 
 # Context & Batching
 

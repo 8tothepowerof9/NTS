@@ -1,7 +1,7 @@
 # Problems: flash_attention causes issues with timm which is required by the model
 # dora and rslora together cause issues with cut cross entropy plugin
 
-base_model: google/gemma-3n-E4B-it
+base_model: google/gemma-2-9b-it
 model_type: AutoModelForCausalLM
 tokenizer_type: AutoTokenizer
 
@@ -14,19 +14,11 @@ peft_use_rslora: true
 lora_r: 32
 lora_alpha: 32 # Consider using 16 to prevent overwriting pre-trained weights
 lora_dropout: 0.05
-# lora_target_linear: true # Multi-modal models require specifying target modules
-lora_target_modules:
-  - q_proj
-  - k_proj
-  - v_proj
-  - o_proj
-  - gate_proj
-  - up_proj
-  - down_proj
+lora_target_linear: true
 
 # Hardware & Speed
 
-flash_attention: false
+flash_attention: true
 xformers_attention: false
 bf16: true
 fp16: false
@@ -98,6 +90,3 @@ deepspeed: deepspeed_configs/zero2.json
 trust_remote_code: true
 
 strict: false
-
-model_config:
-  attn_implementation: "sdpa"
