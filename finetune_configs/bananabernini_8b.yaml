@@ -70,6 +70,11 @@ test_datasets:
       role: from
       content: value
 
+special_tokens:
+  bos_token: "<bos>"
+  eos_token: "<end_of_turn>" # Use end_of_turn as EOS
+  pad_token: "<pad>"
+
 # Data Loading
 
 dataloader_prefetch_factor: 4

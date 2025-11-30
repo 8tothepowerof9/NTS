@@ -129,21 +129,33 @@ def process_aligned_file(aligned_file_path, max_tokens=10240, model_type="cohere
             )
             continue
 
-        # Create ShareGPT format
-        conversation = {
-            # Have system if using cohere model, if gemma skip system message
-            "messages": [
-                # {
-                #     "from": "system",
-                #     "value": "You are a professional webnovel translator. Translate the following Korean text into flowing, immersive English. Use terminology appropriate for the setting.",
-                # },
-                {
-                    "from": "user",
-                    "value": f"You are a professional webnovel translator. Translate the following Korean text into flowing, immersive English. Use terminology appropriate for the setting.\n\n{korean_content}",
-                },
-                {"from": "assistant", "value": english_content},
-            ]
-        }
+        # Create ShareGPT format based on model_type
+        if model_type == "cohere":
+            # Cohere format with system message
+            conversation = {
+                "messages": [
+                    {
+                        "from": "system",
+                        "value": "You are a professional webnovel translator. Translate the following Korean text into flowing, immersive English. Use terminology appropriate for the setting.",
+                    },
+                    {
+                        "from": "user",
+                        "value": korean_content,
+                    },
+                    {"from": "assistant", "value": english_content},
+                ]
+            }
+        else:
+            # Gemma format without system message (instruction in user message)
+            conversation = {
+                "messages": [
+                    {
+                        "from": "user",
+                        "value": f"You are a professional webnovel translator. Translate the following Korean text into flowing, immersive English. Use terminology appropriate for the setting.\n\n{korean_content}",
+                    },
+                    {"from": "assistant", "value": english_content},
+                ]
+            }
 
         converted_data.append(conversation)
 
@@ -157,6 +169,7 @@ def process_aligned_file(aligned_file_path, max_tokens=10240, model_type="cohere
 def main():
     """Main function to process all aligned.json files in output folder."""
     output_dir = Path("output")
+    model_type = "gemma"
 
     if not output_dir.exists():
         print(f"Error: '{output_dir}' directory not found")
@@ -179,7 +192,7 @@ def main():
     for aligned_file in aligned_files:
         novel_name = aligned_file.parent.name
         converted_data, skipped_chapters = process_aligned_file(
-            aligned_file, max_tokens=max_tokens
+            aligned_file, max_tokens=max_tokens, model_type=model_type
         )
 
         all_converted_data.extend(converted_data)
