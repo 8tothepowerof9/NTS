@@ -169,7 +169,7 @@ def process_aligned_file(aligned_file_path, max_tokens=10240, model_type="cohere
 def main():
     """Main function to process all aligned.json files in output folder."""
     output_dir = Path("output")
-    model_type = "gemma"
+    model_type = "nemo"
 
     if not output_dir.exists():
         print(f"Error: '{output_dir}' directory not found")
